@@ -669,9 +669,8 @@ function generateTurtleModule(_target) {
             return this.queueMoveBy(this._x, this._y, this._radians, -distance);
         };
 
-        proto.$goto_$rw$ = proto.$setpos = proto.$setposition = function(x,y) {
+        proto.$goto_$rw$ = function (x, y) {
             var coords = getCoordinates(x,y);
-
             pushUndo(this);
 
             return this.translate(
@@ -679,6 +678,33 @@ function generateTurtleModule(_target) {
                 coords.x - this._x, coords.y - this._y,
                 true
             );
+        };
+
+        proto.$setpos = proto.$setposition = function(x,y) {
+            var self = this;
+            var coords = getCoordinates(x,y);
+            pushUndo(this);
+
+            var prev_isdown = this.$isdown();
+            this.$penup();
+
+            var promise = getFrameManager().willRenderNext() ?
+                Promise.resolve() :
+                new InstantPromise(),
+
+            promise = promise.then(function () {
+                return self.translate(
+                    self._x, self._y,
+                    coords.x - self._x, coords.y - self._y,
+                    false
+                );
+            });
+
+            return promise.then(function () {
+                if (prev_isdown) {
+                    self.$pendown();
+                }
+            });
         };
         proto.$goto_$rw$.minArgs = 1;
 
